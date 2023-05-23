@@ -1,0 +1,28 @@
+
+name: "LaneDet"
+platform: "tensorrt_plan"
+max_batch_size: 1
+input [
+  {
+    name: "input"
+    data_type: TYPE_FP32
+    dims: [ 3, 360, 640 ]
+  }
+]
+output [
+  {
+    name: "predict_lanes"
+    data_type: TYPE_FP32
+    dims: [ 2784, 77 ]
+  }
+]
+output [
+  {
+    name: "914"
+    data_type: TYPE_FP32
+    dims: [ 2784, 77 ]
+  }
+]
+
+
+
