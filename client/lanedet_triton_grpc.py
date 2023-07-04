@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import imgaug.augmenters as iaa
 
 from imgaug.augmenters import Resize
-def client_init(url="10.11.17.124:9101",
+def client_init(url="10.11.18.117:9001",
                 ssl=False, key_file=None, cert_file=None, ca_certs=None, insecure=False,
                 verbose=False):
     """
@@ -53,11 +53,11 @@ class LaneDetClient():
         self.triton_client = client_init()
         self.inputs = []
         self.outputs = []
-        self.inputs.append(grpcclient.InferInput('input', [1, 3, 360, 640], 'FP16'))
+        self.inputs.append(grpcclient.InferInput('input', [1, 3, 360, 640], 'FP32'))
         self.outputs.append(grpcclient.InferRequestedOutput('predict_lanes'))
         self.outputs.append(grpcclient.InferRequestedOutput('914'))
-        self.inputs[0].set_data_from_numpy(np.random.random([1, 3, 360, 640]).astype(np.float16))
-        self.model_name = 'LaneDet_fp16'
+        self.inputs[0].set_data_from_numpy(np.random.random([1, 3, 360, 640]).astype(np.float32))
+        self.model_name = 'LaneDet'
 
     
     def __call__(self, input_tensor):
@@ -76,7 +76,7 @@ class LaneDetClient():
         img = transform(image=img_org.copy())
         img = img / 255.
         img = img.transpose(2, 0, 1)
-        input_tensor = img[np.newaxis, :, :, :].astype(np.float16)
+        input_tensor = img[np.newaxis, :, :, :].astype(np.float32)
         return input_tensor
 
 class PreprocessClient():
@@ -128,12 +128,25 @@ class PiplineClient():
         output = result.as_numpy("LaneDet_output")
         return output
 
+def showImg(img, y_samples, predictions):
+    img_h, img_w, _ = img.shape
+    y_samples = [i * img_h / 720 for i in y_samples]
+    for line in predictions:
+        line = [i * img_w / 1280 for i in line]
+        cv2.polylines(img, np.int32([list(tups for tups in zip(line, y_samples) if tups[0] > 0 )]), isClosed=False, color=(0, 255, 0), thickness=2)
+    plt.imshow(img)
+    plt.show()
+
 if __name__ == "__main__":
     client_init()
     img_path = 'D:\LocalCode\model_transe\\2022-04-22-11-00-05004(10).jpg'
-    img = cv2.imread(img_path)
-    img = img[np.newaxis, :, :, :]
-    preprocess = LaneDetClient()
-    img = preprocess.proccessInput(img_path=img_path)
-    out = preprocess(img)
-    print(out)
+    img = plt.imread(img_path)
+    img_h, img_w, channel = img.shape
+    print(img.shape)
+    img_input = img[np.newaxis, :, :, :]
+    preprocess = PiplineClient()
+    output = preprocess(img_input)
+    y_samples =  [160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330,
+         340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550,
+          560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710]
+    showImg(img, y_samples, output[0])

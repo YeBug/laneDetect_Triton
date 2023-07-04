@@ -4,9 +4,10 @@ import sys
 import time
 import tritonclient.http as httpclient
 import gevent.ssl
+import matplotlib.pyplot as plt
 
 
-def client_init(url="10.11.17.124:9100",
+def client_init(url="10.11.18.117:9000",
                 ssl=False, key_file=None, cert_file=None, ca_certs=None, insecure=False,
                 verbose=False):
     """
@@ -111,10 +112,28 @@ class PiplineClient():
         output = result.as_numpy("LaneDet_output")
         return output
 
+def showImg(img, y_samples, predictions):
+    img_h, img_w, _ = img.shape
+    y_samples = [i * img_h / 720 for i in y_samples]
+    for line in predictions:
+        line = [i * img_w / 1280 for i in line]
+        cv2.polylines(img, np.int32([list(tups for tups in zip(line, y_samples) if tups[0] > 0 )]), isClosed=False, color=(0, 255, 0), thickness=2)
+    plt.imshow(img)
+    plt.show()
+
 if __name__ == "__main__":
     client_init()
-    img_path = 'D:\LocalCode\model_transe\\2022-04-22-11-00-05004(10).jpg'
-    img = cv2.imread(img_path)
-    img = img[np.newaxis, :, :, :]
+    img_path = 'D:\data\ca_front_left_image_jpg\\1.jpg'
+    img = plt.imread(img_path)
+    img_h, img_w, channel = img.shape
+    print(img.shape)
+    img_input = img[np.newaxis, :, :, :]
     preprocess = PiplineClient()
-    preprocess(img)
+    for i in range(10):
+        output = preprocess(img_input)
+        print(i)
+    # y_samples =  [160, 170, 180, 190, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330,
+    #      340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550,
+    #       560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 710]
+    # showImg(img, y_samples, output[0])
+    
